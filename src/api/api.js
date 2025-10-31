@@ -3,7 +3,7 @@ import axios from 'axios';
 // CORREÇÃO: O baseURL deve apontar para a RAIZ da sua API,
 // não para um endpoint específico como o de login.
 const apiClient = axios.create({
-    baseURL: 'https://133102bdbdbc7.ngrok-free.app/api/auth/login', // Removido o '/auth/login'
+    baseURL: 'https://948942ebc05a.ngrok-free.app/api', // Removido o '/auth/login'
     headers: {
         'Content-Type': 'application/json'
     }
