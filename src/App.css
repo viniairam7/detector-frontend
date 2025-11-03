@@ -1,8 +1,3 @@
-/* * ARQUIVO CSS GLOBAL - TEMA BRADESCO
- * Este arquivo define o visual de toda a aplicação.
- */
-
-/* Variáveis de Cor (baseadas na identidade do Bradesco) */
 :root {
   --bradesco-red: #CC092F;
   --bradesco-red-dark: #A30022;
