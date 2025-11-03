@@ -1,99 +1,99 @@
-// Local: src/pages/DashboardPage.js
-import React, { useState } from 'react';
-import { adicionarCartao } from '../api/api'; // Importa a função da API
+import React, { useState, useEffect } from 'react';
+import { adicionarCartao, getMeusCartoes } from '../api/api';
+import { Link } from 'react-router-dom';
 
 const DashboardPage = () => {
-    // Estados para o formulário de novo cartão
+    // Para o formulário de novo cartão
     const [numero, setNumero] = useState('');
     const [validade, setValidade] = useState('');
     const [nomeTitular, setNomeTitular] = useState('');
-    const [message, setMessage] = useState('');
+    const [formMessage, setFormMessage] = useState('');
+    
+    // Para a lista de cartões
+    const [cartoes, setCartoes] = useState([]);
+    const [listMessage, setListMessage] = useState('Carregando cartões...');
 
-    // ** IMPORTANTE **
-    // Para adicionar um cartão, precisamos do ID do usuário.
-    // Em um app real, o token JWT conteria o ID do usuário, ou
-    // o buscaríamos de um perfil. Por AGORA, vamos pedir
-    // para o usuário digitar o ID dele manualmente.
-    const [usuarioId, setUsuarioId] = useState('');
+    // Função para buscar os cartões do usuário
+    const fetchCartoes = async () => {
+        try {
+            const response = await getMeusCartoes();
+            setCartoes(response.data);
+            if (response.data.length === 0) {
+                setListMessage('Você ainda não tem cartões cadastrados.');
+            } else {
+                setListMessage('');
+            }
+        } catch (error) {
+            console.error('Erro ao buscar cartões:', error);
+            setListMessage('Erro ao buscar cartões.');
+        }
+    };
 
-    const handleSubmit = async (event) => {
+    // useEffect com [] vazia roda UMA VEZ quando a página carrega
+    useEffect(() => {
+        fetchCartoes();
+    }, []);
+
+    // Função para lidar com o envio do formulário de novo cartão
+    const handleAddCartao = async (event) => {
         event.preventDefault();
-        setMessage('');
+        setFormMessage('');
 
-        const cartaoData = {
-            numero: numero,
-            validade: validade,
-            nomeTitular: nomeTitular,
-            usuarioId: usuarioId 
-        };
+        // O DTO não precisa mais do usuarioId!
+        const cartaoData = { numero, validade, nomeTitular };
 
         try {
-            // Chama a função da API. O interceptor (que editamos)
-            // vai adicionar o token JWT automaticamente no cabeçalho.
-            const response = await adicionarCartao(cartaoData);
-            
-            setMessage(`Cartão salvo com sucesso! ID: ${response.data.id}`);
+            await adicionarCartao(cartaoData);
+            setFormMessage('Cartão adicionado com sucesso!');
             // Limpa o formulário
             setNumero('');
             setValidade('');
             setNomeTitular('');
-            setUsuarioId('');
-
+            // Atualiza a lista de cartões
+            fetchCartoes();
         } catch (error) {
-            // Se o token estiver errado ou expirado, o backend retornará um erro 401 ou 403
-            setMessage('Falha ao adicionar cartão. Você está logado?');
+            setFormMessage('Erro ao adicionar cartão.');
             console.error('Erro ao adicionar cartão:', error);
         }
     };
 
     return (
         <div>
-            <h2>Dashboard</h2>
-            <p>Você está logado.</p>
+            <h2>Seus Cartões</h2>
+            {listMessage && <p>{listMessage}</p>}
+            <ul style={{ listStyle: 'none', padding: 0 }}>
+                {cartoes.map(cartao => (
+                    <li key={cartao.id} style={{ border: '1px solid #ddd', padding: '10px', marginBottom: '10px' }}>
+                        <strong>{cartao.nomeTitular}</strong>
+                        <p>Final: **** **** **** {cartao.numero.slice(-4)}</p>
+                        <p>Validade: {cartao.validade}</p>
+                        <Link to={`/cartao/${cartao.id}/transacoes`}>
+                            Ver Extrato
+                        </Link>
+                    </li>
+                ))}
+            </ul>
 
-            <hr />
+            <hr style={{ margin: '30px 0' }} />
 
-            <h3>Adicionar Novo Cartão</h3>
-            <form onSubmit={handleSubmit}>
-                <div>
-                    <label>ID do Usuário:</label>
-                    <input
-                        type="number"
-                        value={usuarioId}
-                        onChange={(e) => setUsuarioId(e.target.value)}
-                        required
-                    />
-                </div>
-                <div>
+            <h2>Adicionar Novo Cartão</h2>
+            <form onSubmit={handleAddCartao}>
+                {/* O campo usuarioId foi REMOVIDO */}
+                <div style={{ marginBottom: '10px' }}>
                     <label>Número do Cartão:</label>
-                    <input
-                        type="text"
-                        value={numero}
-                        onChange={(e) => setNumero(e.target.value)}
-                        required
-                    />
+                    <input type="text" value={numero} onChange={(e) => setNumero(e.target.value)} required style={{ marginLeft: '10px' }} />
                 </div>
-                <div>
+                <div style={{ marginBottom: '10px' }}>
                     <label>Validade (MM/AA):</label>
-                    <input
-                        type="text"
-                        value={validade}
-                        onChange={(e) => setValidade(e.target.value)}
-                        required
-                    />
+                    <input type="text" value={validade} onChange={(e) => setValidade(e.target.value)} required style={{ marginLeft: '10px' }} />
                 </div>
-                <div>
+                <div style={{ marginBottom: '10px' }}>
                     <label>Nome no Cartão:</label>
-                    <input
-                        type="text"
-                        value={nomeTitular}
-                        onChange={(e) => setNomeTitular(e.target.value)}
-                        required
-                    />
+                    <input type="text" value={nomeTitular} onChange={(e) => setNomeTitular(e.target.value)} required style={{ marginLeft: '10px' }} />
                 </div>
                 <button type="submit">Adicionar Cartão</button>
             </form>
-            {message && <p>{message}</p>}
+            {formMessage && <p>{formMessage}</p>}
         </div>
     );
 };
