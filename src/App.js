@@ -3,46 +3,50 @@ import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-ro
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
-import TransacoesPage from './pages/TransacoesPage'; // Vamos criar esta página
+import TransacoesPage from './pages/TransacoesPage';
+import './App.css'; // <-- VERIFIQUE SE ESTA LINHA ESTÁ AQUI
 
-// Função simples para verificar se o usuário está logado (se tem um token)
+// Função de verificação de login
 const estaLogado = () => {
     return localStorage.getItem('userToken') !== null;
 };
 
-// Componente que protege rotas
+// Componente de Rota Protegida
 const ProtectedRoute = ({ children }) => {
     if (!estaLogado()) {
-        // Se não estiver logado, redireciona para a página de login
         return <Navigate to="/login" replace />;
     }
     return children;
 };
 
-// Componente para o layout principal com navegação
+// Layout Principal (com Navbar e Estilos)
 const MainLayout = ({ children }) => {
     const handleLogout = () => {
         localStorage.removeItem('userToken');
-        // Força o recarregamento da página para /login
         window.location.href = '/login'; 
     };
 
     return (
-        <div style={{ fontFamily: 'Arial, sans-serif' }}>
-            <nav style={{ background: '#333', padding: '1rem', color: 'white' }}>
-                <Link to="/dashboard" style={{ color: 'white', marginRight: '20px', textDecoration: 'none' }}>Dashboard</Link>
-                {/* Adicione outros links aqui se precisar */}
-                <button onClick={handleLogout} style={{ float: 'right', background: 'red', color: 'white', border: 'none', padding: '5px 10px', cursor: 'pointer' }}>
+        <div>
+            <header className="app-header">
+                <h1>detector</h1>
+            </header>
+            
+            <nav className="main-nav">
+                <Link to="/dashboard">Dashboard</Link>
+                <button onClick={handleLogout} className="logout-button">
                     Sair
                 </button>
             </nav>
-            <main style={{ padding: '2rem' }}>
+            
+            <main className="page-container">
                 {children}
             </main>
         </div>
     );
 };
 
+// App principal
 function App() {
     return (
         <Router>
