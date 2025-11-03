@@ -1,75 +1,73 @@
-// Local: src/pages/RegisterPage.js
 import React, { useState } from 'react';
-import { registerUser } from '../api/api'; // Importa nossa função da API
+import { registerUser } from '../api/api';
+import { Link } from 'react-router-dom'; // Importar Link
 
 const RegisterPage = () => {
-    // 'useState' cria "variáveis de estado" para guardar o que o usuário digita
     const [nome, setNome] = useState('');
     const [email, setEmail] = useState('');
     const [senha, setSenha] = useState('');
-    const [message, setMessage] = useState(''); // Para exibir mensagens de sucesso/erro
+    const [message, setMessage] = useState('');
 
-    // Função que é chamada quando o usuário clica no botão "Cadastrar"
     const handleSubmit = async (event) => {
-        event.preventDefault(); // Impede que a página recarregue
-        setMessage(''); // Limpa a mensagem anterior
+        event.preventDefault();
+        setMessage('');
 
-        const userData = {
-            nome: nome,
-            email: email,
-            senha: senha
-        };
+        const userData = { nome, email, senha };
 
         try {
-            // Chama a função da API e espera a resposta do backend
-            const response = await registerUser(userData);
-            setMessage(`Usuário cadastrado com sucesso! ID: ${response.data.id}`);
-            // Limpa os campos do formulário após o sucesso
+            await registerUser(userData);
+            setMessage('Usuário cadastrado com sucesso! Você já pode fazer login.');
             setNome('');
             setEmail('');
             setSenha('');
         } catch (error) {
-            // Se o backend retornar um erro, nós o exibimos aqui
-            setMessage('Erro ao cadastrar usuário. Verifique os dados e tente novamente.');
+            setMessage('Erro ao cadastrar usuário.');
             console.error('Houve um erro no cadastro:', error);
         }
     };
 
     return (
-        <div>
+        <div style={{ maxWidth: '400px', margin: '50px auto', padding: '20px', border: '1px solid #ccc', borderRadius: '8px' }}>
             <h2>Cadastro de Novo Usuário</h2>
             <form onSubmit={handleSubmit}>
-                <div>
+                <div style={{ marginBottom: '15px' }}>
                     <label>Nome:</label>
                     <input
                         type="text"
                         value={nome}
                         onChange={(e) => setNome(e.target.value)}
                         required
+                        style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
                     />
                 </div>
-                <div>
+                <div style={{ marginBottom: '15px' }}>
                     <label>Email:</label>
                     <input
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
+                        style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
                     />
                 </div>
-                <div>
+                <div style={{ marginBottom: '15px' }}>
                     <label>Senha:</label>
                     <input
                         type="password"
                         value={senha}
                         onChange={(e) => setSenha(e.target.value)}
                         required
+                        style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
                     />
                 </div>
-                <button type="submit">Cadastrar</button>
+                <button type="submit" style={{ width: '100%', padding: '10px', background: 'blue', color: 'white', border: 'none', cursor: 'pointer' }}>
+                    Cadastrar
+                </button>
             </form>
-            {/* Exibe a mensagem de sucesso ou erro aqui */}
             {message && <p>{message}</p>}
+            <p>
+                Já tem uma conta? <Link to="/login">Faça Login</Link>
+            </p>
         </div>
     );
 };
