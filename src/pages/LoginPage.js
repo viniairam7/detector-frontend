@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { loginUser } from '../api/api';
+import { login } from '../api/api';
 import { useNavigate, Link } from 'react-router-dom'; // Precisamos do Link e do useNavigate
 
 const LoginPage = () => {
@@ -14,7 +14,7 @@ const LoginPage = () => {
         setMessage('');
         try {
             // 1. FAZ A REQUISIÇÃO
-            const response = await loginUser({ email, senha });
+            const response = await login({ email, senha });
             const token = response.data.token; 
 
             // 3. SALVA O TOKEN

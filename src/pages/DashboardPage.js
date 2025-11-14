@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { adicionarCartao, getMeusCartoes } from '../api/api';
+import { getCards, addCard } from '../api/api';
 import { Link } from 'react-router-dom';
 
 const DashboardPage = () => {
@@ -17,7 +17,7 @@ const DashboardPage = () => {
 
     const fetchCartoes = async () => {
         try {
-            const response = await getMeusCartoes();
+            const response = await getCards();
             setCartoes(response.data);
             setListMessage(response.data.length === 0 ? 'Você ainda não tem cartões cadastrados.' : '');
         } catch (error) {
@@ -45,7 +45,7 @@ const DashboardPage = () => {
         // --- FIM DA ATUALIZAÇÃO ---
 
         try {
-            await adicionarCartao(cartaoData);
+            await addCard(cartaoData);
             setFormMessage('Cartão adicionado com sucesso!');
             // Limpa o formulário
             setNumero('');

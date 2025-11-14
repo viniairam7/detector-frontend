@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { registerUser } from '../api/api';
+import { register } from '../api/api';
 import { Link } from 'react-router-dom'; // Importar Link
 
 const RegisterPage = () => {
@@ -15,7 +15,7 @@ const RegisterPage = () => {
         const userData = { nome, email, senha };
 
         try {
-            await registerUser(userData);
+            await register(userData);
             setMessage('Usuário cadastrado com sucesso! Você já pode fazer login.');
             setNome('');
             setEmail('');
