@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Lembre-se de atualizar esta URL se você reiniciar o ngrok!
-const API_URL = 'https://133102bdbdbc7.ngrok-free.app/api'; 
+const API_URL = 'https://detector-50pn.onrender.com/api'; 
 // const API_URL = 'http://localhost:8080/api'; // (Use este se não estiver usando ngrok)
 
 const apiClient = axios.create({
@@ -51,4 +51,5 @@ export const getMeusCartoes = () => {
 export const getTransacoesDoCartao = (cartaoId) => {
     return apiClient.get(`/transacoes/cartao/${cartaoId}`);
 };
+
 
