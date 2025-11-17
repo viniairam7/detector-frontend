@@ -7,7 +7,7 @@ import {
     denyTransaction 
 } from '../api/api';
 
-// --- (Componente Modal de Confirmação - sem alterações) ---
+// --- (Componente Modal de Confirmação - TRADUZIDO) ---
 const ConfirmationModal = ({ transaction, onConfirm, onDeny }) => {
     return (
         <div style={{
@@ -49,14 +49,20 @@ const TransacoesPage = () => {
     const [message, setMessage] = useState('Carregando extrato...');
     const { cartaoId } = useParams();
 
-    // --- (MUDANÇA 1: Campos de lat/lon da loja removidos) ---
     const [valor, setValor] = useState('');
     const [estabelecimento, setEstabelecimento] = useState('');
     const [formMessage, setFormMessage] = useState({ text: '', type: '' });
     const [pendingTransaction, setPendingTransaction] = useState(null);
 
+    // --- (MUDANÇA 1: Função para traduzir status) ---
+    const traduzirStatus = (status) => {
+        if (status === 'PENDING') return 'PENDENTE';
+        if (status === 'COMPLETED') return 'APROVADA';
+        if (status === 'DENIED') return 'NEGADA';
+        return status;
+    };
+
     const fetchTransacoes = useCallback(async () => {
-        // ... (lógica de busca existente, sem alterações)
         if (!cartaoId) return;
         setMessage('Atualizando extrato...');
         try {
@@ -75,9 +81,9 @@ const TransacoesPage = () => {
     }, [fetchTransacoes]);
 
     
-    // --- (MUDANÇA 2: Lógica de handleSubmit totalmente automatizada) ---
     const handleSubmit = async (e) => {
         e.preventDefault();
+        // --- (TRADUZIDO) ---
         setFormMessage({ text: 'Processando...', type: 'loading' });
 
         if (!valor || !estabelecimento) {
@@ -86,10 +92,9 @@ const TransacoesPage = () => {
         }
 
         try {
-            // --- (A) Geocoding da Loja (usando Nominatim) ---
+            // --- (TRADUZIDO) ---
             setFormMessage({ text: 'Localizando estabelecimento...', type: 'loading' });
             
-            // Converte o nome do estabelecimento em URL (ex: "Shopping Morumbi" -> "Shopping%20Morumbi")
             const query = encodeURIComponent(estabelecimento);
             const geocodeUrl = `https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=1`;
 
@@ -97,17 +102,17 @@ const TransacoesPage = () => {
             const geocodeData = await geocodeResponse.json();
 
             if (geocodeData.length === 0) {
-                setFormMessage({ text: 'Não foi possível encontrar o endereço do estabelecimento. Tente ser mais específico (ex: "Shopping Morumbi, São Paulo").', type: 'error' });
+                // --- (TRADUZIDO) ---
+                setFormMessage({ text: 'Não foi possível encontrar o endereço. Tente ser mais específico (ex: "Shopping Morumbi, São Paulo").', type: 'error' });
                 return;
             }
 
             const latitudeLoja = parseFloat(geocodeData[0].lat);
             const longitudeLoja = parseFloat(geocodeData[0].lon);
 
-            // --- (B) Geolocation do Usuário (usando Navegador) ---
+            // --- (TRADUZIDO) ---
             setFormMessage({ text: 'Obtendo sua localização...', type: 'loading' });
             
-            // Oculta a permissão do navegador dentro de uma "Promise" para usar com async/await
             const userPosition = await new Promise((resolve, reject) => {
                 if (!navigator.geolocation) {
                     reject(new Error("Geolocalização não é suportada pelo seu navegador."));
@@ -118,7 +123,7 @@ const TransacoesPage = () => {
             const latitudeUsuario = userPosition.coords.latitude;
             const longitudeUsuario = userPosition.coords.longitude;
 
-            // --- (C) Envio para o Backend ---
+            // --- (TRADUZIDO) ---
             setFormMessage({ text: 'Enviando transação...', type: 'loading' });
 
             const transacaoDto = {
@@ -132,11 +137,12 @@ const TransacoesPage = () => {
             };
 
             const response = await addTransaction(transacaoDto);
-            const respostaApi = response.data; // O TransacaoResponseDTO
+            const respostaApi = response.data; 
 
             if (respostaApi.statusResposta === 'COMPLETED') {
+                // --- (TRADUZIDO) ---
                 setFormMessage({ text: 'Transação registrada com sucesso!', type: 'success' });
-                fetchTransacoes(); // Atualiza a lista
+                fetchTransacoes(); 
                 setValor('');
                 setEstabelecimento('');
             } else if (respostaApi.statusResposta === 'PENDING_CONFIRMATION') {
@@ -149,45 +155,54 @@ const TransacoesPage = () => {
 
         } catch (error) {
             console.error("Erro no processo de transação:", error);
+            // --- (TRADUZIDO) ---
             setFormMessage({ text: `Erro: ${error.message}. Tente novamente.`, type: 'error' });
         }
     };
     
-    // --- (Handlers do Modal - sem alterações) ---
-    const handleConfirm = async () => {
-        if (!pendingTransaction) return;
+    // --- (MUDANÇA 2: Handlers refatorados para aceitar ID) ---
+    // Agora podem ser chamados pelo Modal ou pela Lista
+    const handleConfirm = async (transacaoId) => {
+        if (!transacaoId) return;
         try {
-            await confirmTransaction(pendingTransaction.id);
+            await confirmTransaction(transacaoId);
+            // --- (TRADUZIDO) ---
             alert('Transação confirmada com sucesso!');
-            setPendingTransaction(null);
-            fetchTransacoes();
+            // Se o modal estiver aberto para esta transação, feche-o
+            if (pendingTransaction && pendingTransaction.id === transacaoId) {
+                setPendingTransaction(null);
+            }
+            fetchTransacoes(); // Atualiza a lista
         } catch (error) {
             console.error("Erro ao confirmar transação:", error);
             alert("Erro ao confirmar.");
         }
     };
 
-    const handleDeny = async () => {
-        if (!pendingTransaction) return;
+    const handleDeny = async (transacaoId) => {
+        if (!transacaoId) return;
         try {
-            await denyTransaction(pendingTransaction.id);
+            await denyTransaction(transacaoId);
+            // --- (TRADUZIDO) ---
             alert('Transação negada.');
-            setPendingTransaction(null);
-            fetchTransacoes();
+            // Se o modal estiver aberto para esta transação, feche-o
+            if (pendingTransaction && pendingTransaction.id === transacaoId) {
+                setPendingTransaction(null);
+            }
+            fetchTransacoes(); // Atualiza a lista
         } catch (error) {
             console.error("Erro ao negar transação:", error);
             alert("Erro ao negar.");
         }
     };
 
-    // --- (Função de Estilo - sem alterações) ---
+    // Função de Estilo - (sem alterações)
     const getRowStyle = (status) => {
-        if (status === 'PENDING') return { backgroundColor: '#fcf8e3' };
-        if (status === 'DENIED') return { backgroundColor: '#f2dede', textDecoration: 'line-through' };
-        return {};
+        if (status === 'PENDING') return { backgroundColor: '#fcf8e3' }; // Amarelo
+        if (status === 'DENIED') return { backgroundColor: '#f2dede', textDecoration: 'line-through' }; // Vermelho
+        return {}; // Padrão (APROVADA)
     };
 
-    // --- (MUDANÇA 3: Estilo da Mensagem do Formulário) ---
     const getFormMessageStyle = () => {
         if (formMessage.type === 'error') return { color: 'red', marginTop: '10px', fontWeight: 'bold' };
         if (formMessage.type === 'success') return { color: 'green', marginTop: '10px', fontWeight: 'bold' };
@@ -197,21 +212,22 @@ const TransacoesPage = () => {
     return (
         <div style={{ padding: '20px', maxWidth: '900px', margin: 'auto' }}>
             
+            {/* Modal agora chama os handlers com o ID */}
             {pendingTransaction && (
                 <ConfirmationModal 
                     transaction={pendingTransaction}
-                    onConfirm={handleConfirm}
-                    onDeny={handleDeny}
+                    onConfirm={() => handleConfirm(pendingTransaction.id)}
+                    onDeny={() => handleDeny(pendingTransaction.id)}
                 />
             )}
 
             <Link to="/dashboard">{"< Voltar ao Dashboard"}</Link>
             
-            {/* --- (MUDANÇA 4: Formulário Simplificado) --- */}
             <div style={{ 
                 background: '#f9f9f9', padding: '20px', borderRadius: '8px', 
                 marginTop: '20px', border: '1px solid #ddd' 
             }}>
+                {/* --- (Formulário TRADUZIDO) --- */}
                 <h3 style={{ marginTop: 0 }}>Registrar Nova Transação</h3>
                 <form onSubmit={handleSubmit}>
                     <div style={{ marginBottom: '10px' }}>
@@ -231,7 +247,6 @@ const TransacoesPage = () => {
                             style={{ padding: '8px', width: 'calc(100% - 180px)' }} 
                         />
                     </div>
-                    {/* Os inputs de lat/lon da loja foram removidos */}
                     <button 
                         type="submit" 
                         disabled={formMessage.type === 'loading'}
@@ -252,17 +267,18 @@ const TransacoesPage = () => {
                 </form>
             </div>
 
-            {/* --- (Tabela de Extrato - sem alterações) --- */}
+            {/* --- (Tabela de Extrato TRADUZIDA e com AÇÕES) --- */}
             <h2 style={{ marginTop: '30px' }}>Extrato do Cartão (ID: {cartaoId})</h2>
             {message && <p>{message}</p>}
             <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
-                {/* ... (cabeçalho da tabela) ... */}
                 <thead>
                     <tr style={{ background: '#f0f0f0' }}>
                         <th style={{ border: '1px solid #ddd', padding: '8px' }}>Data/Hora</th>
                         <th style={{ border: '1px solid #ddd', padding: '8px' }}>Estabelecimento</th>
                         <th style={{ border: '1px solid #ddd', padding: '8px' }}>Valor (R$)</th>
                         <th style={{ border: '1px solid #ddd', padding: '8px' }}>Status</th>
+                        {/* --- (MUDANÇA 3: Nova coluna de Ações) --- */}
+                        <th style={{ border: '1px solid #ddd', padding: '8px' }}>Ações</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -278,7 +294,29 @@ const TransacoesPage = () => {
                                 {t.valor.toFixed(2)}
                             </td>
                             <td style={{ border: '1px solid #ddd', padding: '8px', fontWeight: 'bold' }}>
-                                {t.status}
+                                {traduzirStatus(t.status)} {/* <-- Traduzido */}
+                            </td>
+                            
+                            {/* --- (MUDANÇA 4: Botões condicionais) --- */}
+                            <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'center' }}>
+                                {t.status === 'PENDING' ? (
+                                    <div style={{display: 'flex', justifyContent: 'center', gap: '5px'}}>
+                                        <button 
+                                            onClick={() => handleConfirm(t.id)} 
+                                            style={{color: 'green', cursor: 'pointer', padding: '5px', border: '1px solid green', background: '#f0fff0'}}
+                                        >
+                                            Confirmar
+                                        </button>
+                                        <button 
+                                            onClick={() => handleDeny(t.id)} 
+                                            style={{color: 'red', cursor: 'pointer', padding: '5px', border: '1px solid red', background: '#fff0f0'}}
+                                        >
+                                            Negar
+                                        </button>
+                                    </div>
+                                ) : (
+                                    '--' // Sem ações para status APROVADA ou NEGADA
+                                )}
                             </td>
                         </tr>
                     ))}
