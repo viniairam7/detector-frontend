@@ -43,7 +43,7 @@ const ConfirmationModal = ({ transaction, onConfirm, onDeny }) => {
     );
 };
 
-// --- (Página Principal de Transações - com alterações) ---
+// --- (Página Principal de Transações) ---
 const TransacoesPage = () => {
     const [transacoes, setTransacoes] = useState([]);
     const [message, setMessage] = useState('Carregando extrato...');
@@ -54,7 +54,6 @@ const TransacoesPage = () => {
     const [formMessage, setFormMessage] = useState({ text: '', type: '' });
     const [pendingTransaction, setPendingTransaction] = useState(null);
 
-    // --- (MUDANÇA 1: Função para traduzir status) ---
     const traduzirStatus = (status) => {
         if (status === 'PENDING') return 'PENDENTE';
         if (status === 'COMPLETED') return 'APROVADA';
@@ -81,9 +80,11 @@ const TransacoesPage = () => {
     }, [fetchTransacoes]);
 
     
+    // =====================================================================
+    // (MUDANÇA AQUI) - Geocoding Frágil Corrigido
+    // =====================================================================
     const handleSubmit = async (e) => {
         e.preventDefault();
-        // --- (TRADUZIDO) ---
         setFormMessage({ text: 'Processando...', type: 'loading' });
 
         if (!valor || !estabelecimento) {
@@ -92,38 +93,59 @@ const TransacoesPage = () => {
         }
 
         try {
-            // --- (TRADUZIDO) ---
-            setFormMessage({ text: 'Localizando estabelecimento...', type: 'loading' });
-            
-            const query = encodeURIComponent(estabelecimento);
-            const geocodeUrl = `https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=1`;
-
-            const geocodeResponse = await fetch(geocodeUrl);
-            const geocodeData = await geocodeResponse.json();
-
-            if (geocodeData.length === 0) {
-                // --- (TRADUZIDO) ---
-                setFormMessage({ text: 'Não foi possível encontrar o endereço. Tente ser mais específico (ex: "Shopping Morumbi, São Paulo").', type: 'error' });
-                return;
-            }
-
-            const latitudeLoja = parseFloat(geocodeData[0].lat);
-            const longitudeLoja = parseFloat(geocodeData[0].lon);
-
-            // --- (TRADUZIDO) ---
+            // --- (B) Geolocation do Usuário (VEM PRIMEIRO) ---
             setFormMessage({ text: 'Obtendo sua localização...', type: 'loading' });
             
             const userPosition = await new Promise((resolve, reject) => {
                 if (!navigator.geolocation) {
                     reject(new Error("Geolocalização não é suportada pelo seu navegador."));
                 }
-                navigator.geolocation.getCurrentPosition(resolve, reject);
+                // Timeout de 10 segundos
+                navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 });
             });
 
             const latitudeUsuario = userPosition.coords.latitude;
             const longitudeUsuario = userPosition.coords.longitude;
 
-            // --- (TRADUZIDO) ---
+            // --- (A) Geocoding da Loja (AGORA USA O CONTEXTO DO USUÁRIO) ---
+            setFormMessage({ text: 'Localizando estabelecimento...', type: 'loading' });
+            
+            // Cria uma "caixa" (bounding box) de ~50km ao redor do usuário
+            const radiusDeg = 0.09; // (Aprox 55.5 km)
+            const viewbox = [
+                longitudeUsuario - radiusDeg, // lon_min
+                latitudeUsuario - radiusDeg,  // lat_min
+                longitudeUsuario + radiusDeg, // lon_max
+                latitudeUsuario + radiusDeg   // lat_max
+            ].join(',');
+            
+            const query = encodeURIComponent(estabelecimento);
+            // Adiciona &viewbox=${viewbox}&bounded=1 para a API Nominatim
+            // bounded=1 força os resultados a estarem *dentro* da caixa
+            const geocodeUrl = `https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=1&viewbox=${viewbox}&bounded=1`;
+
+            const geocodeResponse = await fetch(geocodeUrl);
+            const geocodeData = await geocodeResponse.json();
+
+            if (geocodeData.length === 0) {
+                // Se não achar NADA perto, tenta uma busca global (sem a caixa)
+                // como um fallback, antes de desistir.
+                const fallbackUrl = `https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=1`;
+                const fallbackResponse = await fetch(fallbackUrl);
+                const fallbackData = await fallbackResponse.json();
+
+                if(fallbackData.length === 0) {
+                    setFormMessage({ text: 'Não foi possível encontrar o endereço. Tente ser mais específico (ex: "Shopping Morumbi, São Paulo").', type: 'error' });
+                    return;
+                }
+                geocodeData[0] = fallbackData[0];
+            }
+
+            const latitudeLoja = parseFloat(geocodeData[0].lat);
+            const longitudeLoja = parseFloat(geocodeData[0].lon);
+
+
+            // --- (C) Envio para o Backend (Sem alteração) ---
             setFormMessage({ text: 'Enviando transação...', type: 'loading' });
 
             const transacaoDto = {
@@ -140,7 +162,6 @@ const TransacoesPage = () => {
             const respostaApi = response.data; 
 
             if (respostaApi.statusResposta === 'COMPLETED') {
-                // --- (TRADUZIDO) ---
                 setFormMessage({ text: 'Transação registrada com sucesso!', type: 'success' });
                 fetchTransacoes(); 
                 setValor('');
@@ -155,24 +176,25 @@ const TransacoesPage = () => {
 
         } catch (error) {
             console.error("Erro no processo de transação:", error);
-            // --- (TRADUZIDO) ---
-            setFormMessage({ text: `Erro: ${error.message}. Tente novamente.`, type: 'error' });
+            // Tratamento de erro melhorado para timeout de geolocalização
+            let errorMsg = error.message;
+            if (error.code === 1) errorMsg = "Permissão de localização negada.";
+            if (error.code === 3) errorMsg = "Tempo limite para obter localização esgotado.";
+            
+            setFormMessage({ text: `Erro: ${errorMsg}. Tente novamente.`, type: 'error' });
         }
     };
     
-    // --- (MUDANÇA 2: Handlers refatorados para aceitar ID) ---
-    // Agora podem ser chamados pelo Modal ou pela Lista
+    // --- (Handlers do Modal - refatorados para aceitar ID) ---
     const handleConfirm = async (transacaoId) => {
         if (!transacaoId) return;
         try {
             await confirmTransaction(transacaoId);
-            // --- (TRADUZIDO) ---
             alert('Transação confirmada com sucesso!');
-            // Se o modal estiver aberto para esta transação, feche-o
             if (pendingTransaction && pendingTransaction.id === transacaoId) {
                 setPendingTransaction(null);
             }
-            fetchTransacoes(); // Atualiza a lista
+            fetchTransacoes(); 
         } catch (error) {
             console.error("Erro ao confirmar transação:", error);
             alert("Erro ao confirmar.");
@@ -183,24 +205,22 @@ const TransacoesPage = () => {
         if (!transacaoId) return;
         try {
             await denyTransaction(transacaoId);
-            // --- (TRADUZIDO) ---
             alert('Transação negada.');
-            // Se o modal estiver aberto para esta transação, feche-o
             if (pendingTransaction && pendingTransaction.id === transacaoId) {
                 setPendingTransaction(null);
             }
-            fetchTransacoes(); // Atualiza a lista
+            fetchTransacoes(); 
         } catch (error) {
             console.error("Erro ao negar transação:", error);
             alert("Erro ao negar.");
         }
     };
 
-    // Função de Estilo - (sem alterações)
+    // --- (Funções de Estilo - sem alterações) ---
     const getRowStyle = (status) => {
-        if (status === 'PENDING') return { backgroundColor: '#fcf8e3' }; // Amarelo
-        if (status === 'DENIED') return { backgroundColor: '#f2dede', textDecoration: 'line-through' }; // Vermelho
-        return {}; // Padrão (APROVADA)
+        if (status === 'PENDING') return { backgroundColor: '#fcf8e3' }; 
+        if (status === 'DENIED') return { backgroundColor: '#f2dede', textDecoration: 'line-through' }; 
+        return {};
     };
 
     const getFormMessageStyle = () => {
@@ -212,7 +232,6 @@ const TransacoesPage = () => {
     return (
         <div style={{ padding: '20px', maxWidth: '900px', margin: 'auto' }}>
             
-            {/* Modal agora chama os handlers com o ID */}
             {pendingTransaction && (
                 <ConfirmationModal 
                     transaction={pendingTransaction}
@@ -227,7 +246,6 @@ const TransacoesPage = () => {
                 background: '#f9f9f9', padding: '20px', borderRadius: '8px', 
                 marginTop: '20px', border: '1px solid #ddd' 
             }}>
-                {/* --- (Formulário TRADUZIDO) --- */}
                 <h3 style={{ marginTop: 0 }}>Registrar Nova Transação</h3>
                 <form onSubmit={handleSubmit}>
                     <div style={{ marginBottom: '10px' }}>
@@ -267,7 +285,6 @@ const TransacoesPage = () => {
                 </form>
             </div>
 
-            {/* --- (Tabela de Extrato TRADUZIDA e com AÇÕES) --- */}
             <h2 style={{ marginTop: '30px' }}>Extrato do Cartão (ID: {cartaoId})</h2>
             {message && <p>{message}</p>}
             <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
@@ -277,7 +294,6 @@ const TransacoesPage = () => {
                         <th style={{ border: '1px solid #ddd', padding: '8px' }}>Estabelecimento</th>
                         <th style={{ border: '1px solid #ddd', padding: '8px' }}>Valor (R$)</th>
                         <th style={{ border: '1px solid #ddd', padding: '8px' }}>Status</th>
-                        {/* --- (MUDANÇA 3: Nova coluna de Ações) --- */}
                         <th style={{ border: '1px solid #ddd', padding: '8px' }}>Ações</th>
                     </tr>
                 </thead>
@@ -294,10 +310,8 @@ const TransacoesPage = () => {
                                 {t.valor.toFixed(2)}
                             </td>
                             <td style={{ border: '1px solid #ddd', padding: '8px', fontWeight: 'bold' }}>
-                                {traduzirStatus(t.status)} {/* <-- Traduzido */}
+                                {traduzirStatus(t.status)}
                             </td>
-                            
-                            {/* --- (MUDANÇA 4: Botões condicionais) --- */}
                             <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'center' }}>
                                 {t.status === 'PENDING' ? (
                                     <div style={{display: 'flex', justifyContent: 'center', gap: '5px'}}>
@@ -315,7 +329,7 @@ const TransacoesPage = () => {
                                         </button>
                                     </div>
                                 ) : (
-                                    '--' // Sem ações para status APROVADA ou NEGADA
+                                    '--'
                                 )}
                             </td>
                         </tr>

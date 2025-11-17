@@ -2,113 +2,114 @@ import axios from 'axios';
 
 // Configuração da instância do Axios
 const api = axios.create({
-  // URL base da sua API no Render
-  baseURL: 'https://detector-50pn.onrender.com', 
+  baseURL: 'https://detector-50pn.onrender.com',
 });
 
+// =====================================================================
+// (NOVO) Interceptor de Requisição (Anexa o token automaticamente)
+// =====================================================================
+api.interceptors.request.use(
+  (config) => {
+    // Rotas públicas que NÃO devem receber o token
+    const publicRoutes = [
+      '/api/auth/login',
+      '/api/usuarios'
+    ];
+
+    if (publicRoutes.includes(config.url)) {
+      return config; // Não anexa o token
+    }
+
+    // Para todas as outras rotas, anexa o token
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// =====================================================================
+// (NOVO) Interceptor de Resposta (Lida com 401 - Expirado/Inválido)
+// =====================================================================
+api.interceptors.response.use(
+  (response) => {
+    // Se a resposta for 2xx, apenas a retorna
+    return response;
+  },
+  (error) => {
+    // Se recebermos um erro 401 (Não Autorizado)
+    if (error.response && error.response.status === 401) {
+      // Remove o token inválido do localStorage
+      localStorage.removeItem('token');
+      // Redireciona para a página de login
+      // (Evita que o usuário fique "preso" em uma página autenticada com um token ruim)
+      window.location.href = '/login';
+      
+      // Retorna uma mensagem de erro clara
+      return Promise.reject(new Error('Sessão expirada. Faça login novamente.'));
+    }
+    // Para todos os outros erros, apenas os repassa
+    return Promise.reject(error);
+  }
+);
+
+
 // --- FUNÇÕES DE AUTENTICAÇÃO ---
+// (Mantêm o Content-Type, pois são rotas públicas)
 
 export const login = (email, senha) => {
-  // CORREÇÃO: Forçar o Content-Type para garantir que o Spring reconheça o JSON
   return api.post('/api/auth/login', { email, senha }, {
-    headers: {
-      'Content-Type': 'application/json' 
-    }
+    headers: { 'Content-Type': 'application/json' }
   });
 };
 
-// --- MUDANÇA AQUI: Adicionando o header explicitamente ---
 export const register = (nome, email, senha) => {
   return api.post('/api/usuarios', { nome, email, senha }, {
-    headers: {
-      'Content-Type': 'application/json' // Força o Content-Type
-    }
+    headers: { 'Content-Type': 'application/json' }
   });
 };
+
 
 // --- FUNÇÕES DE CARTÃO ---
+// (Agora estão limpas, sem a lógica manual de token)
 
 export const getCards = () => {
-  const token = localStorage.getItem('token');
-  return api.get('/api/cartoes/meus', {
-    headers: { 'Authorization': `Bearer ${token}` }
-  });
+  return api.get('/api/cartoes/meus');
 };
 
-/**
- * (CORRIGIDO) Adiciona o token ao cabeçalho.
- */
 export const addCard = (cartaoData) => {
-  // 1. Pega o token do localStorage
-  const token = localStorage.getItem('token');
-  
-  // 2. Envia o token nos headers da requisição POST
-  return api.post('/api/cartoes', cartaoData, {
-    headers: {
-      'Authorization': `Bearer ${token}`
-    }
-  });
+  return api.post('/api/cartoes', cartaoData);
 };
 
 
 // --- FUNÇÕES DE TRANSAÇÃO ---
+// (Também limpas, sem a lógica manual de token)
 
-/**
- * (NOVO) Busca o extrato (transações) de um cartão específico.
- * Requerido pela TransacoesPage.js
- */
 export const getTransacoesDoCartao = (cartaoId) => {
-  const token = localStorage.getItem('token');
-  // NOTA: O backend não tem esta rota! Você precisará criá-la.
-  // Vou assumir que a rota será /api/cartoes/{cartaoId}/transacoes
-  // *** Ajuste esta URL conforme a rota que você criar no backend ***
-  return api.get(`/api/cartoes/${cartaoId}/transacoes`, {
-    headers: { 'Authorization': `Bearer ${token}` }
-  });
-  // Se você não quiser criar uma rota nova, esta função não funcionará.
-  // A TransacoesPage precisaria de outra lógica.
+  return api.get(`/api/cartoes/${cartaoId}/transacoes`);
 };
 
-/**
- * (NOVO) Registra uma nova transação.
- * Agora, espera uma resposta 200 OK com status (COMPLETED ou PENDING).
- */
 export const addTransaction = (transacaoData) => {
-  const token = localStorage.getItem('token');
-  return api.post('/api/transacoes', transacaoData, {
-    headers: { 'Authorization': `Bearer ${token}` }
-  });
+  return api.post('/api/transacoes', transacaoData);
 };
 
-/**
- * (NOVO) Confirma uma transação que estava pendente.
- */
 export const confirmTransaction = (transacaoId) => {
-  const token = localStorage.getItem('token');
-  return api.post(`/api/transacoes/${transacaoId}/confirmar`, {}, {
-    headers: { 'Authorization': `Bearer ${token}` }
-  });
+  return api.post(`/api/transacoes/${transacaoId}/confirmar`, {});
 };
 
-/**
- * (NOVO) Nega uma transação que estava pendente.
- */
 export const denyTransaction = (transacaoId) => {
-  const token = localStorage.getItem('token');
-  return api.post(`/api/transacoes/${transacaoId}/negar`, {}, {
-    headers: { 'Authorization': `Bearer ${token}` }
-  });
+  return api.post(`/api/transacoes/${transacaoId}/negar`, {});
 };
+
+// --- FUNÇÃO DE USUÁRIO ---
+// (Também limpa, sem a lógica manual de token)
 
 export const setHorarioHabitual = (horarioInicio, horarioFim) => {
-  const token = localStorage.getItem('token');
-  // O endpoint que criamos no UsuarioController
-  return api.put('/api/usuarios/meu-horario', 
-    { horarioInicio, horarioFim }, // O DTO
-    {
-      headers: { 'Authorization': `Bearer ${token}` }
-    }
-  );
+  return api.put('/api/usuarios/meu-horario', { horarioInicio, horarioFim });
 };
 
 export default api;
