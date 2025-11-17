@@ -9,14 +9,22 @@ const api = axios.create({
 // --- FUNÇÕES DE AUTENTICAÇÃO ---
 
 export const login = (email, senha) => {
-  return api.post('/api/auth/login', { email, senha });
+  // CORREÇÃO: Forçar o Content-Type para garantir que o Spring reconheça o JSON
+  return api.post('/api/auth/login', { email, senha }, {
+    headers: {
+      'Content-Type': 'application/json' 
+    }
+  });
 };
 
+// --- MUDANÇA AQUI: Adicionando o header explicitamente ---
 export const register = (nome, email, senha) => {
-  // Nota: O backend espera /api/usuarios, não /api/auth/register
-  return api.post('/api/usuarios', { nome, email, senha });
+  return api.post('/api/usuarios', { nome, email, senha }, {
+    headers: {
+      'Content-Type': 'application/json' // Força o Content-Type
+    }
+  });
 };
-
 
 // --- FUNÇÕES DE CARTÃO ---
 
@@ -90,6 +98,17 @@ export const denyTransaction = (transacaoId) => {
   return api.post(`/api/transacoes/${transacaoId}/negar`, {}, {
     headers: { 'Authorization': `Bearer ${token}` }
   });
+};
+
+export const setHorarioHabitual = (horarioInicio, horarioFim) => {
+  const token = localStorage.getItem('token');
+  // O endpoint que criamos no UsuarioController
+  return api.put('/api/usuarios/meu-horario', 
+    { horarioInicio, horarioFim }, // O DTO
+    {
+      headers: { 'Authorization': `Bearer ${token}` }
+    }
+  );
 };
 
 export default api;

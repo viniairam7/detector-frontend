@@ -1,79 +1,119 @@
 import React, { useState } from 'react';
-import { login } from '../api/api';
-import { useNavigate, Link } from 'react-router-dom'; // Precisamos do Link e do useNavigate
+import { useNavigate, Link } from 'react-router-dom';
+import { login } from '../api/api'; 
 
 const LoginPage = () => {
-    // --- LÓGICA IDÊNTICA ---
     const [email, setEmail] = useState('');
     const [senha, setSenha] = useState('');
-    const [message, setMessage] = useState('');
-    const navigate = useNavigate(); // Hook para fazer o redirecionamento
+    
+    // Novo estado para controlar as mensagens (loading, error, success)
+    const [message, setMessage] = useState({ text: '', type: '' }); // type: 'loading', 'error', 'success'
+    
+    const navigate = useNavigate();
 
-    const handleSubmit = async (event) => {
-        event.preventDefault();
-        setMessage('');
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        
+        // 1. Define a mensagem de progressão
+        setMessage({ text: 'Conectando...', type: 'loading' });
+
+        if (!email.trim() || !senha.trim()) {
+            setMessage({ text: 'E-mail e senha são obrigatórios.', type: 'error' });
+            return;
+        }
+
         try {
-            // 1. FAZ A REQUISIÇÃO
-            const response = await login({ email, senha });
-            const token = response.data.token; 
+            // 2. Tenta fazer o login
+            const response = await login(email, senha);
+            
+            // 3. FLUXO DE SUCESSO
+            localStorage.setItem('token', response.data.token);
+            
+            // Define a mensagem de sucesso
+            setMessage({ text: 'Login bem-sucedido! Redirecionando...', type: 'success' });
 
-            // 3. SALVA O TOKEN
-            if (token) {
-                localStorage.setItem('userToken', token);
-                setMessage("Login bem-sucedido! Redirecionando...");
-                
-                // 4. REDIRECIONA PARA O DASHBOARD
-                setTimeout(() => {
-                    navigate('/dashboard'); 
-                }, 1000); // Espera 1 segundo antes de redirecionar
+            // Redireciona para o dashboard após 1 segundo
+            setTimeout(() => {
+                navigate('/dashboard'); 
+            }, 1000);
+
+        } catch (err) {
+            // 4. FLUXO DE ERRO
+            console.error("Erro no login:", err);
+            
+            let errorMessage = 'Email ou senha inválidos.'; 
+            if (err.response && err.response.data && typeof err.response.data === 'string') {
+                errorMessage = err.response.data;
+            } else if (err.code === 'ERR_NETWORK') {
+                errorMessage = 'Erro de rede. Não foi possível conectar ao servidor.';
             }
-        } catch (error) {
-            console.error("Erro no login:", error);
-            setMessage("Erro ao fazer login. Verifique seu e-mail e senha.");
+            
+            setMessage({ text: errorMessage, type: 'error' });
         }
     };
-    // --- FIM DA LÓGICA ---
+
+    // Função para definir a cor da mensagem
+    const getMessageStyle = () => {
+        if (message.type === 'error') return { color: 'red' };
+        if (message.type === 'success') return { color: 'green' };
+        if (message.type === 'loading') return { color: 'blue' };
+        return {};
+    };
+    
+    const isLoading = message.type === 'loading';
 
     return (
-        // Aplicamos os estilos do Bradesco (do App.css)
-        <div className="auth-container">
-            <h1 style={{ color: 'var(--bradesco-red)', textTransform: 'lowercase', fontSize: '2.5rem' }}>detector</h1>
-            <h2>Login</h2>
-            <form onSubmit={handleSubmit} className="form-card" style={{ textAlign: 'left' }}>
-                <div className="form-group">
-                    <label>Email:</label>
+        <div style={{ padding: '20px', maxWidth: '400px', margin: 'auto', border: '1px solid #ccc', borderRadius: '8px', marginTop: '50px' }}>
+            <h2 style={{ textAlign: 'center' }}>Login</h2>
+            <form onSubmit={handleSubmit}>
+                <div style={{ marginBottom: '15px' }}>
                     <input
                         type="email"
+                        placeholder="E-mail"
                         value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        onChange={e => setEmail(e.target.value)}
                         required
-                        className="input-field" // Classe de estilo
+                        style={{ width: '100%', padding: '10px', boxSizing: 'border-box' }}
                     />
                 </div>
-                <div className="form-group">
-                    <label>Senha:</label>
+                <div style={{ marginBottom: '15px' }}>
                     <input
                         type="password"
+                        placeholder="Senha"
                         value={senha}
-                        onChange={(e) => setSenha(e.target.value)}
+                        onChange={e => setSenha(e.target.value)}
                         required
-                        className="input-field" // Classe de estilo
+                        style={{ width: '100%', padding: '10px', boxSizing: 'border-box' }}
                     />
                 </div>
-                <button type="submit" className="btn-primary"> {/* Classe de estilo */}
-                    Entrar
+                <button 
+                    type="submit" 
+                    disabled={isLoading} // Desabilita o botão durante o carregamento
+                    style={{ 
+                        width: '100%', 
+                        padding: '10px', 
+                        backgroundColor: isLoading ? '#adb5bd' : '#007bff', 
+                        color: 'white', 
+                        border: 'none', 
+                        borderRadius: '5px', 
+                        cursor: isLoading ? 'not-allowed' : 'pointer'
+                    }}
+                >
+                    {isLoading ? 'Conectando...' : 'Entrar'}
                 </button>
+                
+                {/* 5. Mensagem de Loading/Erro/Sucesso */}
+                {message.text && (
+                    <p style={{ ...getMessageStyle(), marginTop: '10px', textAlign: 'center', fontWeight: 'bold' }}>
+                        {message.text}
+                    </p>
+                )}
             </form>
-            {/* Mensagem de sucesso ou erro com classes de estilo */}
-            {message && <p className={`message ${message.includes('sucesso') ? 'success' : 'error'}`}>{message}</p>}
-            
-            {/* Link para a página de Cadastro */}
-            <p className="auth-link">
-                Não tem uma conta? <Link to="/register" style={{ color: 'var(--bradesco-red)' }}>Cadastre-se</Link>
+            <p style={{ marginTop: '20px', textAlign: 'center' }}>
+                Não tem conta? <Link to="/register">Crie uma aqui</Link>
             </p>
         </div>
     );
 };
 
 export default LoginPage;
-

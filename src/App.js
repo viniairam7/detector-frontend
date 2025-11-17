@@ -4,11 +4,12 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import TransacoesPage from './pages/TransacoesPage';
-import './App.css'; // <-- VERIFIQUE SE ESTA LINHA ESTÁ AQUI
+import './App.css'; 
 
-// Função de verificação de login
+// --- CORREÇÃO 1 (AQUI) ---
+// Função de verificação de login (procurando pela chave 'token')
 const estaLogado = () => {
-    return localStorage.getItem('userToken') !== null;
+    return localStorage.getItem('token') !== null; // <-- Mudado de 'userToken' para 'token'
 };
 
 // Componente de Rota Protegida
@@ -21,8 +22,11 @@ const ProtectedRoute = ({ children }) => {
 
 // Layout Principal (com Navbar e Estilos)
 const MainLayout = ({ children }) => {
+    
+    // --- CORREÇÃO 2 (AQUI) ---
+    // O Logout também deve remover a chave 'token'
     const handleLogout = () => {
-        localStorage.removeItem('userToken');
+        localStorage.removeItem('token'); // <-- Mudado de 'userToken' para 'token'
         window.location.href = '/login'; 
     };
 
