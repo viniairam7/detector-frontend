@@ -5,6 +5,7 @@ import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import TransacoesPage from './pages/TransacoesPage';
 import './App.css'; 
+import FraudAlertManager from './components/layout/FraudAlertManager';
 import SimulacaoPage from './pages/SimulacaoPage';
 
 // --- CORREÇÃO 1 (AQUI) ---
@@ -39,17 +40,15 @@ const AdminRoute = ({ children }) => {
 
 // Layout Principal (com Navbar e Estilos)
 const MainLayout = ({ children }) => {
-    
-    // --- CORREÇÃO 2 (AQUI) ---
-    // O Logout também deve remover a chave 'token'
     const handleLogout = () => {
         localStorage.removeItem('token');
-        localStorage.removeItem('userEmail'); // <-- Mudado de 'userToken' para 'token'
+        localStorage.removeItem('userEmail');
         window.location.href = '/login'; 
     };
 
     return (
         <div>
+            <FraudAlertManager /> {}
             <header className="app-header">
                 <h1>detector</h1>
             </header>

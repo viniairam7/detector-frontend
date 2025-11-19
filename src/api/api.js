@@ -116,4 +116,8 @@ export const getDadosSimulacao = () => {
   return api.get('/api/usuarios/admin/simulacao-dados');
 };
 
+export const verificarPendencias = () => {
+  return api.get('/api/transacoes/pendentes');
+};
+
 export default api;

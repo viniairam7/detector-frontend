@@ -1,5 +1,3 @@
-// src/pages/DashboardPage.js
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { getCards, addCard, setHorarioHabitual } from '../api/api';
@@ -7,7 +5,7 @@ import { getCards, addCard, setHorarioHabitual } from '../api/api';
 const DashboardPage = () => {
     const [cartoes, setCartoes] = useState([]);
     const [error, setError] = useState('');
-    const [message, setMessage] = useState(''); // Mensagem de sucesso para adição de cartão
+    const [message, setMessage] = useState('');
     const navigate = useNavigate();
 
     // States para o formulário de NOVO CARTÃO
@@ -29,8 +27,8 @@ const DashboardPage = () => {
             } catch (err) {
                 console.error('Erro ao buscar cartões:', err);
                 setError('Não foi possível carregar seus cartões. Faça login novamente.');
+                // Se o erro for de autenticação, redireciona
                 if (err.response && err.response.status === 401) {
-                    localStorage.removeItem('token');
                     navigate('/login');
                 }
             }
@@ -46,7 +44,6 @@ const DashboardPage = () => {
         try {
             await addCard({ numero, validade, nomeTitular });
             
-            // Limpa o formulário e exibe sucesso
             setNumero('');
             setValidade('');
             setNomeTitular('');
@@ -80,7 +77,6 @@ const DashboardPage = () => {
         }
     };
     
-    // Função para definir a cor da mensagem de horário
     const getHorarioMessageStyle = () => {
         if (horarioMessage.type === 'error') return { color: 'red' };
         if (horarioMessage.type === 'success') return { color: 'green' };
@@ -92,9 +88,7 @@ const DashboardPage = () => {
         <div style={{ maxWidth: '800px', margin: 'auto', padding: '20px' }}>
             <h2 style={{ borderBottom: '1px solid #ccc', paddingBottom: '10px' }}>Minha Conta (Dashboard)</h2>
             
-            {/* ===================================================================== */}
-            {/* 1. CONFIGURAÇÃO DE HORÁRIO HABITUAL */}
-            {/* ===================================================================== */}
+            {/* CONFIGURAÇÃO DE HORÁRIO HABITUAL */}
             <div style={{ background: '#f8f9fa', padding: '20px', borderRadius: '8px', marginTop: '20px', border: '1px solid #ddd' }}>
                 <h3 style={{ marginTop: 0, color: '#333' }}>Definir Horário Habitual</h3>
                 <p style={{ fontSize: '0.9em', color: '#666' }}>
@@ -133,9 +127,7 @@ const DashboardPage = () => {
                 )}
             </div>
 
-            {/* ===================================================================== */}
-            {/* 2. ADICIONAR NOVO CARTÃO */}
-            {/* ===================================================================== */}
+            {/* ADICIONAR NOVO CARTÃO */}
             <div style={{ background: '#fff', padding: '20px', borderRadius: '8px', border: '1px solid #ddd', marginTop: '30px' }}>
                 <h3 style={{ marginTop: 0, color: '#333' }}>Adicionar Novo Cartão</h3>
                 <form onSubmit={handleAddCartao}>
@@ -175,9 +167,7 @@ const DashboardPage = () => {
                 </form>
             </div>
 
-            {/* ===================================================================== */}
-            {/* 3. LISTA DE CARTÕES */}
-            {/* ===================================================================== */}
+            {/* LISTA DE CARTÕES */}
             <h3 style={{ marginTop: '40px', color: '#333' }}>Meus Cartões</h3>
             
             <div className="cartoes-lista">
