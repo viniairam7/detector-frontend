@@ -28,13 +28,18 @@ const LoginPage = () => {
             
             // 3. FLUXO DE SUCESSO
             localStorage.setItem('token', response.data.token);
+            localStorage.setItem('userEmail', response.data.email);
             
             // Define a mensagem de sucesso
             setMessage({ text: 'Login bem-sucedido! Redirecionando...', type: 'success' });
 
             // Redireciona para o dashboard após 1 segundo
             setTimeout(() => {
-                navigate('/dashboard'); 
+                if (response.data.email === 'admin@simulacao.com') {
+                    navigate('/simulacao');
+                } else {
+                    navigate('/dashboard');
+                }
             }, 1000);
 
         } catch (err) {

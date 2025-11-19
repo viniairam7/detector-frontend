@@ -112,4 +112,8 @@ export const setHorarioHabitual = (horarioInicio, horarioFim) => {
   return api.put('/api/usuarios/meu-horario', { horarioInicio, horarioFim });
 };
 
+export const getDadosSimulacao = () => {
+  return api.get('/api/usuarios/admin/simulacao-dados');
+};
+
 export default api;

@@ -1,6 +1,7 @@
+// src/pages/DashboardPage.js
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-// 1. IMPORTAÇÕES CORRIGIDAS E ADICIONADAS
 import { getCards, addCard, setHorarioHabitual } from '../api/api';
 
 const DashboardPage = () => {
@@ -14,7 +15,7 @@ const DashboardPage = () => {
     const [validade, setValidade] = useState('');
     const [nomeTitular, setNomeTitular] = useState('');
 
-    // --- 2. NOVOS STATES PARA O FORMULÁRIO DE HORÁRIO ---
+    // States para o formulário de HORÁRIO
     const [horarioInicio, setHorarioInicio] = useState('08:00');
     const [horarioFim, setHorarioFim] = useState('22:00');
     const [horarioMessage, setHorarioMessage] = useState({ text: '', type: '' });
@@ -23,8 +24,7 @@ const DashboardPage = () => {
     useEffect(() => {
         const fetchCards = async () => {
             try {
-                // 3. NOME DA FUNÇÃO CORRIGIDO
-                const response = await getCards(); 
+                const response = await getCards();
                 setCartoes(response.data);
             } catch (err) {
                 console.error('Erro ao buscar cartões:', err);
@@ -44,7 +44,6 @@ const DashboardPage = () => {
         setError('');
         setMessage('Adicionando cartão...');
         try {
-            // 4. NOME DA FUNÇÃO CORRIGIDO
             await addCard({ numero, validade, nomeTitular });
             
             // Limpa o formulário e exibe sucesso
@@ -60,16 +59,15 @@ const DashboardPage = () => {
 
         } catch (err) {
             console.error('Erro ao adicionar cartão:', err);
-            // Pega a mensagem de erro específica do backend (ex: "Número de cartão inválido")
-            const errorMsg = err.response && err.response.data 
-                           ? err.response.data.message || err.response.data 
+            const errorMsg = err.response && err.response.data && err.response.data.message 
+                           ? err.response.data.message 
                            : 'Verifique os dados.';
             setError(`Erro ao adicionar cartão: ${errorMsg}`);
             setMessage('');
         }
     };
 
-    // --- 5. NOVA FUNÇÃO HANDLER PARA O HORÁRIO ---
+    // Handler para salvar o horário habitual
     const handleHorarioSubmit = async (e) => {
         e.preventDefault();
         setHorarioMessage({ text: 'Salvando...', type: 'loading' });
@@ -91,21 +89,64 @@ const DashboardPage = () => {
     };
 
     return (
-        <div style={{ maxWidth: '800px', margin: 'auto' }}>
-            <h2>Dashboard</h2>
+        <div style={{ maxWidth: '800px', margin: 'auto', padding: '20px' }}>
+            <h2 style={{ borderBottom: '1px solid #ccc', paddingBottom: '10px' }}>Minha Conta (Dashboard)</h2>
             
-            {/* Formulário de Adicionar Cartão */}
-            <div style={{ background: '#f9f9f9', padding: '15px', borderRadius: '8px', border: '1px solid #ddd' }}>
-                <h3 style={{ marginTop: 0 }}>Adicionar Novo Cartão</h3>
+            {/* ===================================================================== */}
+            {/* 1. CONFIGURAÇÃO DE HORÁRIO HABITUAL */}
+            {/* ===================================================================== */}
+            <div style={{ background: '#f8f9fa', padding: '20px', borderRadius: '8px', marginTop: '20px', border: '1px solid #ddd' }}>
+                <h3 style={{ marginTop: 0, color: '#333' }}>Definir Horário Habitual</h3>
+                <p style={{ fontSize: '0.9em', color: '#666' }}>
+                    Defina a janela de horário em que você costuma fazer compras. 
+                    Transações fora deste período poderão ser sinalizadas para sua segurança.
+                </p>
+                <form onSubmit={handleHorarioSubmit} style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                    <div style={{display: 'flex', alignItems: 'center'}}>
+                        <label style={{marginRight: '5px', fontWeight: 'bold'}}>De:</label>
+                        <input 
+                            type="time" 
+                            value={horarioInicio}
+                            onChange={(e) => setHorarioInicio(e.target.value)}
+                            style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+                            required
+                        />
+                    </div>
+                    <div style={{display: 'flex', alignItems: 'center'}}>
+                        <label style={{marginRight: '5px', marginLeft: '10px', fontWeight: 'bold'}}>Até:</label>
+                        <input 
+                            type="time" 
+                            value={horarioFim}
+                            onChange={(e) => setHorarioFim(e.target.value)}
+                            style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+                            required
+                        />
+                    </div>
+                    <button type="submit" style={{ padding: '8px 15px', cursor: 'pointer', background: '#007bff', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>
+                        Salvar Preferência
+                    </button>
+                </form>
+                {horarioMessage.text && (
+                    <p style={{ ...getHorarioMessageStyle(), marginTop: '10px', fontWeight: 'bold' }}>
+                        {horarioMessage.text}
+                    </p>
+                )}
+            </div>
+
+            {/* ===================================================================== */}
+            {/* 2. ADICIONAR NOVO CARTÃO */}
+            {/* ===================================================================== */}
+            <div style={{ background: '#fff', padding: '20px', borderRadius: '8px', border: '1px solid #ddd', marginTop: '30px' }}>
+                <h3 style={{ marginTop: 0, color: '#333' }}>Adicionar Novo Cartão</h3>
                 <form onSubmit={handleAddCartao}>
-                    <div style={{ marginBottom: '10px' }}>
+                    <div style={{ marginBottom: '15px', display: 'flex', gap: '10px' }}>
                         <input
                             type="text"
                             placeholder="Número do Cartão (ex: 4242...)"
                             value={numero}
                             onChange={e => setNumero(e.target.value)}
                             required
-                            style={{ padding: '8px', marginRight: '10px', width: 'calc(60% - 15px)' }}
+                            style={{ padding: '10px', flex: 2, borderRadius: '4px', border: '1px solid #ccc' }}
                         />
                         <input
                             type="text"
@@ -113,80 +154,60 @@ const DashboardPage = () => {
                             value={validade}
                             onChange={e => setValidade(e.target.value)}
                             required
-                            style={{ padding: '8px', width: 'calc(40% - 15px)' }}
+                            style={{ padding: '10px', flex: 1, borderRadius: '4px', border: '1px solid #ccc' }}
                         />
                     </div>
-                    <div style={{ marginBottom: '10px' }}>
+                    <div style={{ marginBottom: '15px' }}>
                         <input
                             type="text"
-                            placeholder="Nome (como está no cartão)"
+                            placeholder="Nome do Titular (como no cartão)"
                             value={nomeTitular}
                             onChange={e => setNomeTitular(e.target.value)}
                             required
-                            style={{ padding: '8px', width: '100%', boxSizing: 'border-box' }}
+                            style={{ padding: '10px', width: '100%', boxSizing: 'border-box', borderRadius: '4px', border: '1px solid #ccc' }}
                         />
                     </div>
-                    <button type="submit" style={{ padding: '10px 15px', cursor: 'pointer' }}>
+                    <button type="submit" style={{ padding: '10px 20px', cursor: 'pointer', background: '#28a745', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>
                         Adicionar Cartão
                     </button>
-                    {message && <p style={{ color: 'green', marginTop: '10px' }}>{message}</p>}
+                    {message && <p style={{ color: 'green', marginTop: '10px', fontWeight: 'bold' }}>{message}</p>}
+                    {error && <p style={{ color: 'red', marginTop: '10px', fontWeight: 'bold' }}>{error}</p>}
                 </form>
             </div>
 
-            {/* --- 6. NOVO FORMULÁRIO DE HORÁRIO ADICIONADO AQUI --- */}
-            <div style={{ background: '#f9f9f9', padding: '15px', borderRadius: '8px', marginTop: '30px', border: '1px solid #ddd' }}>
-                <h3 style={{ marginTop: 0 }}>Definir Horário Habitual</h3>
-                <p style={{ fontSize: '0.9em', color: '#555' }}>
-                    Defina a janela de horário em que você costuma fazer compras. 
-                    Transações fora deste período exigirão confirmação.
-                </p>
-                <form onSubmit={handleHorarioSubmit}>
-                    <label>De:</label>
-                    <input 
-                        type="time" 
-                        value={horarioInicio}
-                        onChange={(e) => setHorarioInicio(e.target.value)}
-                        style={{ margin: '0 10px', padding: '5px' }}
-                        required
-                    />
-                    <label>Até:</label>
-                    <input 
-                        type="time" 
-                        value={horarioFim}
-                        onChange={(e) => setHorarioFim(e.target.value)}
-                        style={{ marginLeft: '10px', padding: '5px' }}
-                        required
-                    />
-                    <button type="submit" style={{ marginLeft: '15px', padding: '8px 12px', cursor: 'pointer' }}>
-                        Salvar Horário
-                    </button>
-                    {horarioMessage.text && (
-                        <p style={{ ...getHorarioMessageStyle(), marginTop: '10px', fontWeight: 'bold' }}>
-                            {horarioMessage.text}
-                        </p>
-                    )}
-                </form>
-            </div>
-            {/* --- FIM DO NOVO FORMULÁRIO --- */}
-
-            {/* Lista de Cartões Cadastrados */}
-            <h2 style={{ marginTop: '30px' }}>Meus Cartões</h2>
-            {error && <p style={{ color: 'red' }}>{error}</p>}
+            {/* ===================================================================== */}
+            {/* 3. LISTA DE CARTÕES */}
+            {/* ===================================================================== */}
+            <h3 style={{ marginTop: '40px', color: '#333' }}>Meus Cartões</h3>
             
             <div className="cartoes-lista">
                 {cartoes.length > 0 ? (
                     cartoes.map(cartao => (
-                        <div key={cartao.id} style={{ border: '1px solid #ccc', padding: '15px', marginBottom: '10px', borderRadius: '5px' }}>
-                            <p style={{ fontWeight: 'bold', margin: 0 }}>Final: **** {cartao.numero.slice(-4)}</p>
-                            <p style={{ margin: '5px 0' }}>Titular: {cartao.nomeTitular}</p>
-                            <p style={{ margin: '5px 0' }}>Bandeira: {cartao.bandeira}</p>
-                            <Link to={`/cartao/${cartao.id}/transacoes`} style={{ textDecoration: 'none', color: '#007bff' }}>
+                        <div key={cartao.id} style={{ 
+                            border: '1px solid #e0e0e0', padding: '20px', marginBottom: '15px', 
+                            borderRadius: '8px', background: 'white',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+                            display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                        }}>
+                            <div>
+                                <p style={{ fontWeight: 'bold', fontSize: '1.1em', margin: '0 0 5px 0', color: '#333' }}>
+                                    {cartao.bandeira} <span style={{color: '#666', fontSize: '0.9em'}}>•••• {cartao.numero.slice(-4)}</span>
+                                </p>
+                                <p style={{ margin: 0, color: '#777', fontSize: '0.9em' }}>{cartao.nomeTitular}</p>
+                            </div>
+                            <Link 
+                                to={`/cartao/${cartao.id}/transacoes`} 
+                                style={{ 
+                                    textDecoration: 'none', color: '#007bff', fontWeight: 'bold',
+                                    border: '1px solid #007bff', padding: '8px 12px', borderRadius: '4px'
+                                }}
+                            >
                                 Ver Extrato
                             </Link>
                         </div>
                     ))
                 ) : (
-                    <p>{!error ? 'Nenhum cartão cadastrado.' : ''}</p>
+                    <p style={{color: '#666', fontStyle: 'italic'}}>Você ainda não possui cartões cadastrados.</p>
                 )}
             </div>
         </div>
