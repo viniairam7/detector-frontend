@@ -116,6 +116,10 @@ export const getDadosSimulacao = () => {
   return api.get('/api/usuarios/admin/simulacao-dados');
 };
 
+export const updateLocation = (latitude, longitude) => {
+  return api.put('/api/usuarios/minha-localizacao', { latitude, longitude });
+};
+
 export const verificarPendencias = () => {
   return api.get('/api/transacoes/pendentes');
 };

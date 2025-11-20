@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { getCards, addCard, setHorarioHabitual } from '../api/api';
+import { getCards, addCard, setHorarioHabitual, updateLocation  } from '../api/api';
 
 const DashboardPage = () => {
     const [cartoes, setCartoes] = useState([]);
@@ -17,6 +17,25 @@ const DashboardPage = () => {
     const [horarioInicio, setHorarioInicio] = useState('08:00');
     const [horarioFim, setHorarioFim] = useState('22:00');
     const [horarioMessage, setHorarioMessage] = useState({ text: '', type: '' });
+
+    useEffect(() => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    try {
+                        const lat = position.coords.latitude;
+                        const lon = position.coords.longitude;
+                        // Envia para o backend silenciosamente
+                        await updateLocation(lat, lon);
+                        console.log("Localização atualizada no servidor:", lat, lon);
+                    } catch (error) {
+                        console.error("Erro ao atualizar localização:", error);
+                    }
+                },
+                (error) => console.error("Permissão de localização negada:", error)
+            );
+        }
+    }, []);
 
     // Busca os cartões quando a página carrega
     useEffect(() => {
